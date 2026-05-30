@@ -12,15 +12,15 @@ dependencies = [
     "aiofiles>=25.1.0",
     "aiosqlite>=0.21.0",
     "emoji>=2.15.0",
-    "fastapi>=0.136.1",
+    "fastapi>=0.136.3",
     "gmssl>=3.2.2",
     "httpx[socks]>=0.28.1",
-    "lxml>=6.1.0",
+    "lxml>=6.1.1",
     "openpyxl>=3.1.5",
-    "pydantic>=2.13.3",
+    "pydantic>=2.13.4",
     "pyperclip>=1.11.0",
     "rich>=15.0.0",
-    "uvicorn>=0.46.0",
+    "uvicorn>=0.48.0",
 ]
 
 [project.urls]
