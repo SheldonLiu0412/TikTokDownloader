@@ -21,6 +21,8 @@ from src.module.live_watch import (
     anchor_session_consumed,
     build_ffmpeg_live_command,
     mark_anchor_session_consumed,
+    release_anchor_session_reservation,
+    reserve_anchor_session,
     seconds_until_next_anchor_session,
     seconds_until_monitor_window,
     should_monitor,
@@ -185,28 +187,57 @@ async def watch_live(
                     item = task[0]
                     nickname = item.get("nickname", "")
                     title = item.get("title", "")
-                    if anchor_session_limit_file and anchor_session_consumed(
-                        anchor_session_limit_file,
-                        nickname,
-                    ):
-                        sleep_seconds = seconds_until_next_anchor_session()
-                        terminal.console.print(
-                            f"主播 {nickname or 'unknown'} 当前时段已录制过，"
-                            f"{sleep_seconds} 秒后进入下一个监听时段。"
-                        )
-                        await sleep(sleep_seconds)
-                        slept_until_next_session = True
-                        break
                     key = live_task_key(item)
                     if key in recorded_live_keys:
                         terminal.console.print("当前直播场次已录制过，等待下播后再继续监听。")
                         continue
-                    if await record_task(app, terminal, task, error_log, max_retries, dry_run):
+                    reservation_token: str | None = None
+                    if anchor_session_limit_file:
+                        if dry_run:
+                            session_unavailable = anchor_session_consumed(
+                                anchor_session_limit_file,
+                                nickname,
+                            )
+                        else:
+                            reservation_token = reserve_anchor_session(
+                                anchor_session_limit_file,
+                                nickname,
+                                title=title,
+                            )
+                            session_unavailable = reservation_token is None
+                        if session_unavailable:
+                            sleep_seconds = seconds_until_next_anchor_session()
+                            terminal.console.print(
+                                f"主播 {nickname or 'unknown'} 当前时段已被占用或已录制过，"
+                                f"{sleep_seconds} 秒后进入下一个监听时段。"
+                            )
+                            await sleep(sleep_seconds)
+                            slept_until_next_session = True
+                            break
+                    try:
+                        recorded = await record_task(
+                            app,
+                            terminal,
+                            task,
+                            error_log,
+                            max_retries,
+                            dry_run,
+                        )
+                    except Exception:
+                        if anchor_session_limit_file and reservation_token:
+                            release_anchor_session_reservation(
+                                anchor_session_limit_file,
+                                nickname,
+                                reservation_token,
+                            )
+                        raise
+                    if recorded:
                         if anchor_session_limit_file and not dry_run:
                             mark_anchor_session_consumed(
                                 anchor_session_limit_file,
                                 nickname,
                                 title=title,
+                                reservation_token=reservation_token,
                             )
                             sleep_seconds = seconds_until_next_anchor_session()
                             terminal.console.print(
@@ -218,6 +249,12 @@ async def watch_live(
                         recorded_live_keys.add(key)
                         if slept_until_next_session:
                             break
+                    elif anchor_session_limit_file and reservation_token:
+                        release_anchor_session_reservation(
+                            anchor_session_limit_file,
+                            nickname,
+                            reservation_token,
+                        )
                 if slept_until_next_session:
                     continue
             except Exception:

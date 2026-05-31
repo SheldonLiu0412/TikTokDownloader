@@ -1,4 +1,6 @@
+import json
 from datetime import datetime
+from multiprocessing import Process, Queue
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -7,6 +9,8 @@ from src.module.live_watch import (
     anchor_session_window,
     build_ffmpeg_live_command,
     mark_anchor_session_consumed,
+    release_anchor_session_reservation,
+    reserve_anchor_session,
     seconds_until_next_anchor_session,
     seconds_until_monitor_window,
     should_monitor,
@@ -68,6 +72,94 @@ def test_anchor_session_limit_file_tracks_anchor_date_and_slot(tmp_path):
     assert anchor_session_consumed(path, "股海领航", morning)
     assert not anchor_session_consumed(path, "股海领航", afternoon)
     assert not anchor_session_consumed(path, "超短先锋", morning)
+
+
+def test_anchor_session_consumed_treats_legacy_recorded_entry_as_consumed(tmp_path):
+    path = tmp_path / "limits.json"
+    path.write_text(
+        json.dumps(
+            {
+                "anchors": {
+                    "股海领航": {
+                        "2026-05-17": {
+                            "morning": {
+                                "recorded_at": "2026-05-17T10:30:00+08:00",
+                                "title": "早盘",
+                            }
+                        }
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    assert anchor_session_consumed(
+        path,
+        "股海领航",
+        datetime(2026, 5, 17, 10, 45, tzinfo=BEIJING),
+    )
+
+
+def test_reserve_anchor_session_blocks_second_reservation_until_released(tmp_path):
+    path = tmp_path / "limits.json"
+    now = datetime(2026, 5, 17, 19, 51, tzinfo=BEIJING)
+
+    token = reserve_anchor_session(path, "股海领航", now, title="午后")
+
+    assert token
+    assert anchor_session_consumed(path, "股海领航", now)
+    assert reserve_anchor_session(path, "股海领航", now, title="午后") is None
+    assert release_anchor_session_reservation(path, "股海领航", token)
+    assert not anchor_session_consumed(path, "股海领航", now)
+    assert reserve_anchor_session(path, "股海领航", now, title="午后")
+
+
+def test_mark_consumed_preserves_reserved_slot_when_recording_crosses_session(tmp_path):
+    path = tmp_path / "limits.json"
+    morning = datetime(2026, 5, 17, 12, 59, tzinfo=BEIJING)
+    afternoon = datetime(2026, 5, 17, 13, 5, tzinfo=BEIJING)
+
+    token = reserve_anchor_session(path, "股海领航", morning, title="跨时段")
+
+    mark_anchor_session_consumed(
+        path,
+        "股海领航",
+        afternoon,
+        title="跨时段",
+        reservation_token=token,
+    )
+
+    state = json.loads(path.read_text(encoding="utf-8"))
+    morning_entry = state["anchors"]["股海领航"]["2026-05-17"]["morning"]
+    assert morning_entry["status"] == "recorded"
+    assert morning_entry["recorded_at"] == "2026-05-17T13:05:00+08:00"
+    assert "afternoon" not in state["anchors"]["股海领航"]["2026-05-17"]
+    assert not release_anchor_session_reservation(path, "股海领航", token)
+
+
+def _try_reserve(path: Path, queue: Queue) -> None:
+    token = reserve_anchor_session(
+        path,
+        "股海领航",
+        datetime(2026, 5, 17, 19, 51, tzinfo=BEIJING),
+        title="午后",
+    )
+    queue.put(bool(token))
+
+
+def test_reserve_anchor_session_is_atomic_across_processes(tmp_path):
+    path = tmp_path / "limits.json"
+    queue: Queue = Queue()
+    processes = [Process(target=_try_reserve, args=(path, queue)) for _ in range(8)]
+
+    for process in processes:
+        process.start()
+    for process in processes:
+        process.join()
+
+    assert [queue.get() for _ in processes].count(True) == 1
 
 
 def test_build_ffmpeg_live_command_uses_copy_mode_and_output_path():
