@@ -156,6 +156,10 @@ demo()
 </li>
 <li>Read the disclaimer of DouK-Downloader and enter content according to the prompt.</li>
 <li>Write Cookie Information into Configuration File 
+<ol><b>Manually Enter Cookie</b>
+<li>Refer to the <a href="https://github.com/JoeanAmier/TikTokDownloader/blob/master/docs/Cookie%E8%8E%B7%E5%8F%96%E6%95%99%E7%A8%8B.md">Cookie Extraction Tutorial</a>, copy the required Cookie to the clipboard</li>
+<li>Select the <code>Manually Enter Cookie</code> option, paste the Cookie content and follow the program prompts</li>
+</ol>
 <ol><b>Read Cookie from Clipboard</b>
 <li>Refer to the <a href="https://github.com/JoeanAmier/TikTokDownloader/blob/master/docs/Cookie%E8%8E%B7%E5%8F%96%E6%95%99%E7%A8%8B.md">Cookie Extraction Tutorial</a>, copy the required Cookie to the clipboard</li>
 <li>Select the <code>Extracting cookie from clipboard</code> option, the program will automatically read the Cookie from the clipboard and write it into the configuration file</li>
@@ -224,7 +228,7 @@ demo()
 <li>If your computer does not have a suitable program for editing JSON files, we recommend using the <a href="https://www.toolhelper.cn/JSON/JSONFormat">Online Tool</a> to edit the configuration file content, after modification, the software needs to be restarted to take effect.</li>
 <li>When the program prompts the user to input content or links, please be careful to avoid including newline characters, as this may cause unexpected issues.</li>
 <li>This project does not support downloading paid works. Please do not report any issues related to downloading paid works.</li>
-<li>On Windows systems, the program needs to be run as an administrator to read Cookies from Chromium, Chrome, and Edge browsers.</li>
+<li><del>On Windows systems, the program needs to be run as an administrator to read Cookies from Chromium, Chrome, and Edge browsers.</del></li>
 <li>This project has not been optimized for running multiple instances of the program. If you need to run multiple instances, please copy the entire project folder to avoid unexpected issues.</li>
 <li>During program execution, if you need to terminate the program or <code>ffmpeg</code>, please press <code>Ctrl + C</code> to stop the process. Do not click the close button on the terminal window directly.</li>
 </ul>
@@ -332,6 +336,13 @@ repository to execute the build process
 <p><a href="https://www.swiftproxy.net/?ref=TikTokDownloader"><img src="docs/AD/Swiftproxy_EN_AD.png" alt="Swiftproxy"></a></p>
 <p>Access a global pool of 80M+ residential IPs optimized for TikTok and Douyin data extraction. <a href="https://www.swiftproxy.net/?ref=TikTokDownloader">Swiftproxy</a> helps bypass rate limits, reduce blocks, and ensures stable downloads with seamless IP rotation.</p>
 <p>10% off code: PROXY90</p>
+
+***
+
+## Thordata
+
+<p><a href="https://www.thordata.com/?ls=Tkd&lk=Tkd"><img src="docs/AD/Thordata_EN_AD.jpg" alt="Thordata" width="600" height="314"></a></p>
+<p><a href="https://www.thordata.com/?ls=Tkd&lk=Tkd">Thordata</a>: offers 100M+ rotating residential IPs across 190+ countries, Unlimited proxies are ideal for high-concurrency, high-traffic tasks, from $38/day, rotating or sticky sessions, precise targeting and more stable connections. Use code <b>Thor20d</b> for a 10% discount.</p>
 
 ***
 
